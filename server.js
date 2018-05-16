@@ -6,8 +6,6 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
-app.use(express.static('www/tareas'));
-
 var server = app.listen(80, function () {
   console.log('Example app listening on port 3000!');
 });
@@ -22,11 +20,10 @@ app.use('/tareas', express.static('www/tareas'));
 //});
 
 var datos = [];
-function addTask(nombre,tarea){
+function addTask(){
   var html = "";
   var x = 0;
   for (const dato of datos) {
-    console.log(dato);
     
     dato.id =x;
 
@@ -51,33 +48,30 @@ function addTask(nombre,tarea){
    
     return html;
 }
+
+ function log(level,message){
+    text = '';
+    for(let x = 0 ; x <= level ;x++){
+      text+='#';
+    }
+    return text+' '+message;
+ }
   
 
-app.on('listening',function(){
-  console.log("listening");
-  fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
-    if(typeof req.body.nombre != "undefined"){
-      text = txt.replace("[sustituir]",addTask());     
-     
-      res.send(text);
-    }
-  });
-})
-
 app.get('/',function(req,res){
-  console.log("Entra en la peticion GET");
+  console.log("# Entra en la peticion GET");
 
   var nombre = req.query.nombre;
   var tarea = req.query.tarea;
   var html = fs.readFile('./www/tareas/index.html', 'utf8',function(err,text){
-    console.log(text);
-    datos.push({
-      name:nombre,
-      task:tarea,
-      id:0
-    });
+    if(req.query.nombre !== undefined){
+        datos.push({
+          name:nombre,
+          task:tarea,
+          id:0
+        });
+    }
     text = text.replace('[sustituir]',addTask());
-    console.log(text);
     res.send(text);
   })
 
@@ -94,19 +88,19 @@ app.get('/',function(req,res){
 // });
 
 app.post('/',function(req,res){
-  console.log("Entra en la petición POST");
+  console.log("# Entra en la petición POST");
   console.log(req.headers);
   fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
-    if(typeof req.body.nombre != "undefined"){
+    if(req.body.nombre != undefined){
       datos.push({
         name:req.body.nombre || "",
         task:req.body.tarea || "",
         id:0
       });
-      text = txt.replace("[sustituir]",addTask(req.body.nombre,req.body.tarea));     
-     
-      res.send(text);
     }
+    
+    text = txt.replace("[sustituir]",addTask());     
+    res.send(text);
   });
 });
 
@@ -116,3 +110,6 @@ app.post('/borrar/tarea', function (req, res) {
    console.log("array despues de splice",datos);
    res.redirect(307,'/');
 });
+
+
+app.use(express.static('www/tareas'));
