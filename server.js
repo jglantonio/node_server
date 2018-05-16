@@ -20,6 +20,11 @@ app.use('/tareas', express.static('www/tareas'));
 //});
 
 var datos = [];
+
+/**
+ * function addTask()
+ * Crea los elementos de la tabla.
+ */
 function addTask(){
   var html = "";
   var x = 0;
@@ -31,7 +36,7 @@ function addTask(){
       "<td class='center'>[id]</td>"+
       "<td class='center'>[nombre]</td>"+
       "<td>[tarea]</td>"+
-      "<td>"+  
+      "<td style='text-align:center;'>"+  
          "<form action='/borrar/tarea' method='POST'>"+
             "<input type='hidden' name='id' value='"+x+"'>"+
             "<input type='submit' value='X' name='d'>"+
@@ -49,6 +54,12 @@ function addTask(){
     return html;
 }
 
+/**
+ * function log(level,message)
+ * Define los niveles de log
+ * @param {integer} level 
+ * @param {string} message 
+ */
  function log(level,message){
     text = '';
     for(let x = 0 ; x <= level ;x++){
@@ -72,6 +83,7 @@ app.get('/',function(req,res){
         });
     }
     text = text.replace('[sustituir]',addTask());
+    clearHeader(res);
     res.send(text);
   })
 
@@ -99,17 +111,34 @@ app.post('/',function(req,res){
       });
     }
     
-    text = txt.replace("[sustituir]",addTask());     
+    text = txt.replace("[sustituir]",addTask());  
+    clearHeader(res);
     res.send(text);
   });
 });
 
+/**
+ * app.post('/borrar/tarea', function (req, res)
+ * Borra el dato del array , que viene dado por el id.
+ */
 app.post('/borrar/tarea', function (req, res) {
    console.log("array antes de splice",datos);
    datos.splice(req.body.id,1);
    console.log("array despues de splice",datos);
+   clearHeader(res);
    res.redirect(307,'/');
 });
+
+/**
+ * function clearHeader(res)
+ * Establece como Undefined las variables que entran por las
+ * peticiones del header.
+ * @param {Response} res 
+ */
+function clearHeader(res){
+  res.header.nombre= undefined;
+  res.header.tarea = undefined;
+}
 
 
 app.use(express.static('www/tareas'));
