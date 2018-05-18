@@ -14,13 +14,21 @@ app.use('/calculadora', express.static('www/calculadora/docs'));
 
 app.use('/tareas', express.static('www/tareas'));
 
-if(fs.exists('./data.json')){
-  var datos = []  ;
-}else{
-  var data = JSON.parse(fs.readFileSync('./data.json','utf-8',function(){}));
-  var datos = data  ;  
-}
+//if(fs.exists('./data.json')){
+//  var datos = []  ;
+//}else{
+//  var data = JSON.parse(fs.readFileSync('./data.json','utf-8',function(){}));
+//  var datos = data  ;  
+//}
 
+fs.open('./data.json','r',function(err,fd){
+  if(err){
+    this.datos = []  ;
+  }else{
+    var data = JSON.parse(fs.readFileSync('./data.json','utf-8',function(){}));
+    this.datos = data  ;  
+  }
+});
 //app.get('/datos',function(req,res){
 //  console.log(req.query);
 //  res.send("Nombre : "+req.query.nombre +" <br> Tarea : "+req.query.tarea|| '');
