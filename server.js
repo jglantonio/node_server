@@ -92,14 +92,40 @@ function storeTask(task){
     }
     return text+' '+message;
  }
+
+/**
+ * function resetForm(text,action,nombre = "",tareas ="",id="")
+ * Función que establece los campos que necesitan una inicialización
+ * en el código html.
+ * @param {string} text 
+ * @param {string} action 
+ * @param {string} nombre 
+ * @param {string} tareas 
+ * @param {integer} id 
+ */
+function resetForm(text,action,nombre = "",tareas ="",id=""){
   
-function resetStore(text){
   text = text.replace('[sustituir]',addTask());
-  text = text.replace('[action]',"http://192.168.0.43");
-  text = text.replace("[nombre]","");  
-  text = text.replace("[tarea]",""); 
+  text = text.replace('[action]',action);
+  text = text.replace('[id]',id);
+  text = text.replace("[nombre]",nombre);  
+  text = text.replace("[tarea]",tareas); 
+
   return text;
 }
+
+/**
+ * function clearHeader(res)
+ * Establece como Undefined las variables que entran por las
+ * peticiones del header.
+ * @param {Response} res 
+ */
+function clearHeader(res){
+  res.header.nombre= undefined;
+  res.header.tarea = undefined;
+}
+
+
 
 app.get('/',function(req,res){
   console.log("# Entra en la peticion GET");
@@ -115,7 +141,7 @@ app.get('/',function(req,res){
         });
     } 
     clearHeader(res);
-    res.send(resetStore(text));
+    res.send(resetForm(text,"http://192.168.0.43"));
   })
 
 });
@@ -143,7 +169,7 @@ app.post('/',function(req,res){
       storeTask(datos);
     }
     clearHeader(res);
-    res.send(resetStore(txt));
+    res.send(resetForm(txt,"http://192.168.0.43"));
   });
 });
 
@@ -159,6 +185,13 @@ app.post('/borrar/tarea', function (req, res) {
    clearHeader(res);
    res.redirect(307,'/');
 });
+/**
+ * app.post('/editar/tarea', function (req, res)
+ * Función que establece la edición de los campos , estableciendo
+ * los valores que se piden
+ * @param {Request} req
+ * @param {Response} res
+ */
 app.post('/editar/tarea', function (req, res) {
   var task = 0;
   fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
@@ -168,16 +201,16 @@ app.post('/editar/tarea', function (req, res) {
         task = dato;
       }
     }
-
-    text = txt.replace("[nombre]",task.name);  
-    text = text.replace("[tarea]",task.task);  
-    text = text.replace("[id]",task.id);  
-    text = text.replace('[action]',"http://192.168.0.43/actualizar/tarea");
-    text = text.replace("[sustituir]",addTask());  
-    res.send(text);
+  
+    res.send(resetForm(txt,"http://192.168.0.43/actualizar/tarea",task.name,task.task,task.id));
   });
 });
-
+/**
+ * app.post('/actualizar/tarea', function (req, res)
+ * Función que actualiza los datos.
+ * @param {Request} req
+ * @param {Response} res
+ */
 app.post('/actualizar/tarea', function (req, res) {
   var task = 0;
   fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
@@ -188,26 +221,11 @@ app.post('/actualizar/tarea', function (req, res) {
         dato.name = req.body.nombre;
       }
     }
-
-    text = txt.replace("[nombre]","");  
-    text = text.replace("[tarea]","");  
-    text = text.replace('[action]',"http://192.168.0.43");
-    text = text.replace("[id]","");  
-    text = text.replace("[sustituir]",addTask());  
+  
+    res.send(resetForm(txt,"http://192.168.0.43"));
     res.send(text);
   });
 });
-
-/**
- * function clearHeader(res)
- * Establece como Undefined las variables que entran por las
- * peticiones del header.
- * @param {Response} res 
- */
-function clearHeader(res){
-  res.header.nombre= undefined;
-  res.header.tarea = undefined;
-}
 
 
 app.use(express.static('www/tareas'));
