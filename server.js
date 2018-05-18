@@ -53,14 +53,14 @@ function addTask(){
       "<td class='center'>[nombre]</td>"+
       "<td>[tarea]</td>"+
       "<td style='text-align:center;'>"+  
-        "<form action='/borrar/tarea' method='POST'>"+
+        "<div class='botones'><form action='/borrar/tarea' method='POST'>"+
           "<input type='hidden' name='id' value='"+x+"'>"+
-          "<input type='submit' value='X' name='d'>"+
+          "<input type='submit' value='Eliminar' name='d'>"+
         "</form>"+
         "<form action='/editar/tarea' method='POST'>"+
           "<input type='hidden' name='id' value='"+x+"'>"+
-          "<input type='submit' value='E' name='d'>"+
-        "</form>"+
+          "<input type='submit' value='Editar' name='d'>"+
+        "</form></div>"+
       "</td>"+
     "</tr>";
   
@@ -93,22 +93,29 @@ function storeTask(task){
     return text+' '+message;
  }
   
+function resetStore(text){
+  text = text.replace('[sustituir]',addTask());
+  text = text.replace('[action]',"http://192.168.0.43");
+  text = text.replace("[nombre]","");  
+  text = text.replace("[tarea]",""); 
+  return text;
+}
 
 app.get('/',function(req,res){
   console.log("# Entra en la peticion GET");
   var nombre = req.query.nombre;
   var tarea = req.query.tarea;
   var html = fs.readFile('./www/tareas/index.html', 'utf8',function(err,text){
+    
     if(req.query.nombre !== undefined){
         datos.push({
           name:nombre,
           task:tarea,
           id:0
         });
-    }
-    text = text.replace('[sustituir]',addTask());
+    } 
     clearHeader(res);
-    res.send(text);
+    res.send(resetStore(text));
   })
 
 });
@@ -135,9 +142,8 @@ app.post('/',function(req,res){
       datos.push(tarea);
       storeTask(datos);
     }
-    text = txt.replace("[sustituir]",addTask());  
     clearHeader(res);
-    res.send(text);
+    res.send(resetStore(txt));
   });
 });
 
@@ -155,37 +161,43 @@ app.post('/borrar/tarea', function (req, res) {
 });
 app.post('/editar/tarea', function (req, res) {
   var task = 0;
-  fs.readFile('./www/tareas/editar.html','utf8',function(err,txt){
-      
-     for(dato of datos){
-        if(dato.id = req.body.id){
-          task = dato;
-        }
-      }
-    text = txt.replace("[nombre]",task.name);  
-    text = text.replace("[tarea]",task.task);  
-    console.log(text);
-    res.send(text);
-  });
-});
-
-app.post('/actualizar/tarea', function (req, res) {
-  var task = 0;
-  fs.readFile('./www/tareas/editar.html','utf8',function(err,txt){
+  fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
       
     for(dato of datos){
-      if(dato.id = req.body.id){
+      if(dato.id == req.body.id){
         task = dato;
       }
     }
 
     text = txt.replace("[nombre]",task.name);  
     text = text.replace("[tarea]",task.task);  
-    console.log(text);
+    text = text.replace("[id]",task.id);  
+    text = text.replace('[action]',"http://192.168.0.43/actualizar/tarea");
+    text = text.replace("[sustituir]",addTask());  
     res.send(text);
   });
-  res.redirect(307,'/');
 });
+
+app.post('/actualizar/tarea', function (req, res) {
+  var task = 0;
+  fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
+      
+    for(dato of datos){
+      if(dato.id == req.body.id){
+        dato.task= req.body.tarea;
+        dato.name = req.body.nombre;
+      }
+    }
+
+    text = txt.replace("[nombre]","");  
+    text = text.replace("[tarea]","");  
+    text = text.replace('[action]',"http://192.168.0.43");
+    text = text.replace("[id]","");  
+    text = text.replace("[sustituir]",addTask());  
+    res.send(text);
+  });
+});
+
 /**
  * function clearHeader(res)
  * Establece como Undefined las variables que entran por las
