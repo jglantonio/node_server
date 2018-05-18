@@ -14,12 +14,16 @@ app.use('/calculadora', express.static('www/calculadora/docs'));
 
 app.use('/tareas', express.static('www/tareas'));
 
+
+var data = JSON.parse(fs.readFileSync('./data.json','utf-8',function(){}));
+
+console.log(data);
 //app.get('/datos',function(req,res){
 //  console.log(req.query);
 //  res.send("Nombre : "+req.query.nombre +" <br> Tarea : "+req.query.tarea|| '');
 //});
 
-var datos = [];
+var datos = data  ;
 
 /**
  * function addTask()
@@ -28,6 +32,7 @@ var datos = [];
 function addTask(){
   var html = "";
   var x = 0;
+  console.log(datos);  
   for (const dato of datos) {
     
     dato.id =x;
@@ -71,7 +76,6 @@ function addTask(){
 
 app.get('/',function(req,res){
   console.log("# Entra en la peticion GET");
-
   var nombre = req.query.nombre;
   var tarea = req.query.tarea;
   var html = fs.readFile('./www/tareas/index.html', 'utf8',function(err,text){
@@ -101,16 +105,18 @@ app.get('/',function(req,res){
 
 app.post('/',function(req,res){
   console.log("# Entra en la petición POST");
-  console.log(req.headers);
   fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
     if(req.body.nombre != undefined){
-      datos.push({
+      var tarea = {
         name:req.body.nombre || "",
         task:req.body.tarea || "",
         id:0
+      }; 
+      datos.push(tarea);
+      fs.writeFile('./data.json',JSON.stringify(datos),function(err){
+          console.log("## Fichero de datos actualizado");
       });
     }
-    
     text = txt.replace("[sustituir]",addTask());  
     clearHeader(res);
     res.send(text);
@@ -124,6 +130,9 @@ app.post('/',function(req,res){
 app.post('/borrar/tarea', function (req, res) {
    console.log("array antes de splice",datos);
    datos.splice(req.body.id,1);
+    fs.writeFile('./data.json',JSON.stringify(datos),function(err){
+      console.log("## Fichero de datos actualizado");
+    });
    console.log("array despues de splice",datos);
    clearHeader(res);
    res.redirect(307,'/');
