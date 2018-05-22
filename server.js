@@ -2,17 +2,70 @@ var express = require('express');
 var fs = require('fs');
 var app = express();
 var bodyParser = require('body-parser');
+var mysql      = require('mysql');
 
+
+var connection = mysql.createConnection({
+  host     : 'localhost',
+  user     : 'master',
+  password : '1234',
+  database : 'tareasdb'
+});
+ 
+connection.connect(function(err){
+  if(err){
+    console.log("# Error de conexión");
+    console.log(err);
+  }else{
+    console.log("# Conectado a la base de datos");
+  }
+});
+ 
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
-var server = app.listen(80, function () {
+var server = app.listen(3000, function () {
   console.log('Example app listening on port 3000!');
 });
 
 app.use('/calculadora', express.static('www/calculadora/docs'));
 
 app.use('/tareas', express.static('www/tareas'));
+
+var datosTareas = [];
+
+function insertarDatos(datos){
+  var  post = [
+    datos.nombre, 
+    datos.tarea
+  ];
+  var q = 'INSERT INTO tareas (nombre,tarea) VALUES (?,?)';
+  var query = connection.query( q,post, function (error, results) {
+
+    if (error) {
+      throw error;
+    }else{
+    }
+  });  
+}
+
+
+function leerDB(){
+  var q = 'SELECT * FROM tareas';
+  var query = connection.query( q, function (error, results) {
+    if (error) {
+      throw error;
+    }else{
+      for (const row of results) {
+        datosTareas.push({
+          name:row.nombre,
+          task:row.tarea,
+          id:row.id
+        });
+      }
+    }
+  });  
+}
 
 //if(fs.exists('./data.json')){
 //  var datos = []  ;
@@ -21,14 +74,14 @@ app.use('/tareas', express.static('www/tareas'));
 //  var datos = data  ;  
 //}
 
-fs.open('./data.json','r',function(err,fd){
-  if(err){
-    this.datos = []  ;
-  }else{
-    var data = JSON.parse(fs.readFileSync('./data.json','utf-8',function(){}));
-    this.datos = data  ;  
-  }
-});
+//fs.open('./data.json','r',function(err,fd){
+//if(err){
+//    this.datos = []  ;
+//  }else{
+//    var data = JSON.parse(fs.readFileSync('./data.json','utf-8',function(){}));
+//    this.datos = data  ;  
+//  }
+// });
 //app.get('/datos',function(req,res){
 //  console.log(req.query);
 //  res.send("Nombre : "+req.query.nombre +" <br> Tarea : "+req.query.tarea|| '');
@@ -131,8 +184,10 @@ app.get('/',function(req,res){
   console.log("# Entra en la peticion GET");
   var nombre = req.query.nombre;
   var tarea = req.query.tarea;
-  var html = fs.readFile('./www/tareas/index.html', 'utf8',function(err,text){
-    
+  
+   leerDB('R');
+   console.log(datosTareas);
+   /* 
     if(req.query.nombre !== undefined){
         datos.push({
           name:nombre,
@@ -140,10 +195,8 @@ app.get('/',function(req,res){
           id:0
         });
     } 
-    clearHeader(res);
-    res.send(resetForm(text,"http://192.168.0.43"));
-  })
-
+    res.send(resetForm(text,"http://192.168.0.43:3000")); */
+  
 });
 
 /**
@@ -157,7 +210,7 @@ app.get('/',function(req,res){
 // });
 
 app.post('/',function(req,res){
-  console.log("# Entra en la petición POST");
+  console.log("# Entra en la petición POST - Se inserta un dato");
   fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
     if(req.body.nombre != undefined){
       var tarea = {
@@ -166,10 +219,16 @@ app.post('/',function(req,res){
         id:0
       }; 
       datos.push(tarea);
-      storeTask(datos);
+
+      actualizarBaseDeDatos('U',{
+        nombre:tarea.name,
+        tarea:tarea.task
+      })
+      
+      //storeTask(datos);
     }
     clearHeader(res);
-    res.send(resetForm(txt,"http://192.168.0.43"));
+    res.send(resetForm(txt,"http://192.168.0.43:3000"));
   });
 });
 
