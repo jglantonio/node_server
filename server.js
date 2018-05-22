@@ -187,16 +187,7 @@ app.get('/',function(req,res){
   
    leerDB('R');
    console.log(datosTareas);
-   /* 
-    if(req.query.nombre !== undefined){
-        datos.push({
-          name:nombre,
-          task:tarea,
-          id:0
-        });
-    } 
-    res.send(resetForm(text,"http://192.168.0.43:3000")); */
-  
+   
 });
 
 /**
@@ -223,7 +214,8 @@ app.post('/',function(req,res){
       actualizarBaseDeDatos('U',{
         nombre:tarea.name,
         tarea:tarea.task
-      })
+      });
+      leerDB();
       
       //storeTask(datos);
     }
