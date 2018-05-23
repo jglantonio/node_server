@@ -4,6 +4,9 @@ var app = express();
 var bodyParser = require('body-parser');
 var mysql      = require('mysql');
 
+var datos = [];
+
+var ip = 'http://192.168.0.43:3000'
 
 var connection = mysql.createConnection({
   host     : 'localhost',
@@ -32,37 +35,17 @@ app.use('/calculadora', express.static('www/calculadora/docs'));
 
 app.use('/tareas', express.static('www/tareas'));
 
-var datosTareas = [];
-
-function insertarDatos(datos){
-  var  post = [
-    datos.nombre, 
-    datos.tarea
-  ];
-  var q = 'INSERT INTO tareas (nombre,tarea) VALUES (?,?)';
-  var query = connection.query( q,post, function (error, results) {
-
-    if (error) {
-      throw error;
-    }else{
-    }
-  });  
-}
 
 
-function leerDB(){
+function leerDB(cb){
   var q = 'SELECT * FROM tareas';
   var query = connection.query( q, function (error, results) {
     if (error) {
       throw error;
     }else{
-      for (const row of results) {
-        datosTareas.push({
-          name:row.nombre,
-          task:row.tarea,
-          id:row.id
-        });
-      }
+      datos = results;
+      console.log(datos);
+      cb();
     }
   });  
 }
@@ -94,44 +77,34 @@ function leerDB(){
 function addTask(){
   var html = "";
   var x = 0;
-  console.log(datos);  
   for (const dato of datos) {
     
-    dato.id =x;
-
-    html +=  
-    
+    html += 
     "<tr>"+
       "<td class='center'>[id]</td>"+
       "<td class='center'>[nombre]</td>"+
       "<td>[tarea]</td>"+
       "<td style='text-align:center;'>"+  
         "<div class='botones'><form action='/borrar/tarea' method='POST'>"+
-          "<input type='hidden' name='id' value='"+x+"'>"+
+          "<input type='hidden' name='id' value='"+dato.id+"'>"+
           "<input type='submit' value='Eliminar' name='d'>"+
         "</form>"+
         "<form action='/editar/tarea' method='POST'>"+
-          "<input type='hidden' name='id' value='"+x+"'>"+
+          "<input type='hidden' name='id' value='"+dato.id+"'>"+
           "<input type='submit' value='Editar' name='d'>"+
         "</form></div>"+
       "</td>"+
     "</tr>";
   
-    html = html.replace('[id]',x);
-    html = html.replace('[nombre]',dato.name);
-    html = html.replace('[tarea]',dato.task);
+    html = html.replace('[id]',dato.id);
+    html = html.replace('[nombre]',dato.nombre);
+    html = html.replace('[tarea]',dato.tarea);
 
     x++;
   }
-   
     return html;
 }
 
-function storeTask(task){
-  fs.writeFile('./data.json',JSON.stringify(task),function(err){
-      console.log("## Fichero de datos actualizado");
-  });
-}
 /**
  * function log(level,message)
  * Define los niveles de log
@@ -157,8 +130,7 @@ function storeTask(task){
  * @param {integer} id 
  */
 function resetForm(text,action,nombre = "",tareas ="",id=""){
-  
-  text = text.replace('[sustituir]',addTask());
+  text = text.split("[ip]").join(ip);
   text = text.replace('[action]',action);
   text = text.replace('[id]',id);
   text = text.replace("[nombre]",nombre);  
@@ -179,15 +151,21 @@ function clearHeader(res){
 }
 
 
-
 app.get('/',function(req,res){
   console.log("# Entra en la peticion GET");
-  var nombre = req.query.nombre;
-  var tarea = req.query.tarea;
-  
-   leerDB('R');
-   console.log(datosTareas);
-   
+  connection.query("select * from tareas",function(error,result){
+    if(error){
+     throw error;
+    }else{
+      fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
+        console.log("## Consulta realizada");
+        datos = result;
+        txt = txt.replace('[sustituir]', addTask());
+        clearHeader(res);
+        res.send(resetForm(txt,ip));
+      });
+    }
+  });
 });
 
 /**
@@ -202,26 +180,21 @@ app.get('/',function(req,res){
 
 app.post('/',function(req,res){
   console.log("# Entra en la petición POST - Se inserta un dato");
-  fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
     if(req.body.nombre != undefined){
-      var tarea = {
-        name:req.body.nombre || "",
-        task:req.body.tarea || "",
-        id:0
-      }; 
-      datos.push(tarea);
-
-      actualizarBaseDeDatos('U',{
-        nombre:tarea.name,
-        tarea:tarea.task
-      });
-      leerDB();
-      
-      //storeTask(datos);
+      var  post = [
+        req.body.nombre || "", 
+        req.body.tarea || ""
+      ];
+      var q = 'INSERT INTO tareas (nombre,tarea) VALUES (?,?)';
+      var query = connection.query( q,post, function (error, results) {
+        if (error) {
+          throw error;
+        }else{
+          console.log("## Datos actualizados");
+          res.redirect(301,'/');
+        }
+      });  
     }
-    clearHeader(res);
-    res.send(resetForm(txt,"http://192.168.0.43:3000"));
-  });
 });
 
 /**
@@ -229,12 +202,14 @@ app.post('/',function(req,res){
  * Borra el dato del array , que viene dado por el id.
  */
 app.post('/borrar/tarea', function (req, res) {
-   console.log("array antes de splice",datos);
-   datos.splice(req.body.id,1);
-   storeTask(datos);
-   console.log("array despues de splice",datos);
-   clearHeader(res);
-   res.redirect(307,'/');
+  console.log('# Peticion DELETE de borrar la tarea dado un id')
+  connection.query('DELETE FROM tareas WHERE id = "'+req.body.id+'"', function (error, results, fields) {
+    if (error) throw error;
+    else {
+      console.log('## Dato borrado');
+      res.redirect(301,'/');
+    }
+  })
 });
 /**
  * app.post('/editar/tarea', function (req, res)
@@ -244,16 +219,17 @@ app.post('/borrar/tarea', function (req, res) {
  * @param {Response} res
  */
 app.post('/editar/tarea', function (req, res) {
+  console.log("# Petición POST redirect de Editar");
   var task = 0;
   fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
-      
     for(dato of datos){
       if(dato.id == req.body.id){
         task = dato;
       }
     }
+    console.log(task,req.body);
   
-    res.send(resetForm(txt,"http://192.168.0.43/actualizar/tarea",task.name,task.task,task.id));
+    res.send(resetForm(txt,ip+"/actualizar/tarea",task.nombre,task.tarea,task.id));
   });
 });
 /**
@@ -263,20 +239,35 @@ app.post('/editar/tarea', function (req, res) {
  * @param {Response} res
  */
 app.post('/actualizar/tarea', function (req, res) {
-  var task = 0;
+  console.log("# Peticion POST de EDITAR una tarea");
   fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
-      
-    for(dato of datos){
-      if(dato.id == req.body.id){
-        dato.task= req.body.tarea;
-        dato.name = req.body.nombre;
+    connection.query('UPDATE tareas SET nombre = ? , tarea = ? WHERE id = ?', [req.body.nombre, req.body.tarea, req.body.id], 
+    function (error, results, fields) {
+      if (error) throw error;
+      else {
+        console.log("## Dato actualizado");
+        res.redirect(301,'/');
       }
-    }
-  
-    res.send(resetForm(txt,"http://192.168.0.43"));
-    res.send(text);
+    });
   });
 });
 
 
 app.use(express.static('www/tareas'));
+
+app.get('/pruebas',function(req , res){
+  var nombre = "pedro";
+  connection.query("select * from tareas",function(error,result){
+    if(error){
+     throw error;
+    }else{
+      fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
+        console.log("## Consulta relaizada");
+        datos = result;
+        txt = txt.replace('[sustituir]', addTask());
+        clearHeader(res);
+        res.send(resetForm(txt,ip));
+      });
+    }
+  });
+});
