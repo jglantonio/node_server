@@ -1,0 +1,6 @@
+[submodule "tareas"]
+	path = ./www/tareas
+	url = https://github.com/jglantonio/tareas_js
+[submodule "calculadora"]
+	path = ./www/calculadora
+	url = https://github.com/jglantonio/calculadora
