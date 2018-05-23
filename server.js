@@ -83,7 +83,8 @@ function addTask(){
     "<tr>"+
       "<td class='center'>[id]</td>"+
       "<td class='center'>[nombre]</td>"+
-      "<td>[tarea]</td>"+
+      "<td >[tarea]</td>"+
+      "<td class='center'>[tiempo]</td>"+
       "<td style='text-align:center;'>"+  
         "<div class='botones'><form action='/borrar/tarea' method='POST'>"+
           "<input type='hidden' name='id' value='"+dato.id+"'>"+
@@ -92,13 +93,15 @@ function addTask(){
         "<form action='/editar/tarea' method='POST'>"+
           "<input type='hidden' name='id' value='"+dato.id+"'>"+
           "<input type='submit' value='Editar' name='d'>"+
-        "</form></div>"+
+        "</form>"+
+       "</div>"+
       "</td>"+
     "</tr>";
   
     html = html.replace('[id]',dato.id);
     html = html.replace('[nombre]',dato.nombre);
     html = html.replace('[tarea]',dato.tarea);
+    html = html.replace('[tiempo]',dato.tiempo);
 
     x++;
   }
@@ -129,12 +132,13 @@ function addTask(){
  * @param {string} tareas 
  * @param {integer} id 
  */
-function resetForm(text,action,nombre = "",tareas ="",id=""){
+function resetForm(text,action,nombre = "",tareas ="",id="",tiempo=""){
   text = text.split("[ip]").join(ip);
   text = text.replace('[action]',action);
   text = text.replace('[id]',id);
   text = text.replace("[nombre]",nombre);  
-  text = text.replace("[tarea]",tareas); 
+  text = text.replace("[tarea]",tareas);  
+  text = text.replace("[tiempo]",tiempo); 
 
   return text;
 }
@@ -161,6 +165,8 @@ app.get('/',function(req,res){
         console.log("## Consulta realizada");
         datos = result;
         txt = txt.replace('[sustituir]', addTask());
+        txt = txt.replace('[sustituir_tiempo]', addGrant());
+        
         clearHeader(res);
         res.send(resetForm(txt,ip));
       });
@@ -183,9 +189,10 @@ app.post('/',function(req,res){
     if(req.body.nombre != undefined){
       var  post = [
         req.body.nombre || "", 
-        req.body.tarea || ""
+        req.body.tarea || "",
+        req.body.tiempo || "",
       ];
-      var q = 'INSERT INTO tareas (nombre,tarea) VALUES (?,?)';
+      var q = 'INSERT INTO tareas (nombre,tarea,tiempo) VALUES (?,?,?)';
       var query = connection.query( q,post, function (error, results) {
         if (error) {
           throw error;
@@ -234,7 +241,7 @@ app.post('/editar/tarea', function (req, res) {
         }
         txt = txt.replace('[sustituir]', addTask());
         clearHeader(res);
-        res.send(resetForm(txt,ip+"/actualizar/tarea",task.nombre,task.tarea,task.id));
+        res.send(resetForm(txt,ip+"/actualizar/tarea",task.nombre,task.tarea,task.id,task.tiempo));
       });
     }
   });
@@ -248,7 +255,8 @@ app.post('/editar/tarea', function (req, res) {
 app.post('/actualizar/tarea', function (req, res) {
   console.log("# Peticion POST de EDITAR una tarea");
   fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
-    connection.query('UPDATE tareas SET nombre = ? , tarea = ? WHERE id = ?', [req.body.nombre, req.body.tarea, req.body.id], 
+    connection.query('UPDATE tareas SET nombre = ? , tarea = ? , tiempo = ?  WHERE id = ?', 
+      [req.body.nombre, req.body.tarea, req.body.tiempo, req.body.id], 
     function (error, results, fields) {
       if (error) throw error;
       else {
@@ -278,3 +286,20 @@ app.get('/pruebas',function(req , res){
     }
   });
 });
+
+function addGrant(){
+  var usersTimes = [];
+  var numColspan = 0;
+  var nameuser = "";
+ 
+console.log(occurrences);
+  for (const dato of datos) {
+    if(numColspan <= dato.tiempo){
+      numColspan = dato.tiempo;
+    }
+    var occurrences = datos.filter(function(val) {
+      return val.nombre === dato.nombre;
+    });
+    console.log(occurrences);
+  }
+}
