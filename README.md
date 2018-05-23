@@ -1,6 +1,7 @@
-# Servidor node.js
 
-Este servidor está montado con express.
+# Servidor node.js ( branch `mysql`)
+
+Este servidor está montado con express sobre un servidor mysql.
 
 # Notas
 
