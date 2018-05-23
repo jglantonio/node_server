@@ -292,7 +292,6 @@ function addGrant(){
   var numColspan = 0;
   var nameuser = "";
  
-console.log(occurrences);
   for (const dato of datos) {
     if(numColspan <= dato.tiempo){
       numColspan = dato.tiempo;
@@ -300,6 +299,10 @@ console.log(occurrences);
     var occurrences = datos.filter(function(val) {
       return val.nombre === dato.nombre;
     });
-    console.log(occurrences);
+    usersTimes.push(occurrences);
   }
+  for (const occurrence of occurrences) {
+      console.log(typeof occurrence);
+  }
+  console.log(usersTimes);
 }
