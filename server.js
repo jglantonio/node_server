@@ -37,6 +37,12 @@ app.use('/tareas', express.static('www/tareas'));
 
 
 
+/**
+ * function leerDB(cb)
+ * Función que lee los datos de la base de datos
+ * @param {callback} cb 
+ */
+
 function leerDB(cb){
   var q = 'SELECT * FROM tareas';
   var query = connection.query( q, function (error, results) {
@@ -49,26 +55,6 @@ function leerDB(cb){
     }
   });  
 }
-
-//if(fs.exists('./data.json')){
-//  var datos = []  ;
-//}else{
-//  var data = JSON.parse(fs.readFileSync('./data.json','utf-8',function(){}));
-//  var datos = data  ;  
-//}
-
-//fs.open('./data.json','r',function(err,fd){
-//if(err){
-//    this.datos = []  ;
-//  }else{
-//    var data = JSON.parse(fs.readFileSync('./data.json','utf-8',function(){}));
-//    this.datos = data  ;  
-//  }
-// });
-//app.get('/datos',function(req,res){
-//  console.log(req.query);
-//  res.send("Nombre : "+req.query.nombre +" <br> Tarea : "+req.query.tarea|| '');
-//});
 
 /**
  * function addTask()
@@ -131,6 +117,7 @@ function addTask(){
  * @param {string} nombre 
  * @param {string} tareas 
  * @param {integer} id 
+ * @param {integer} tiempo 
  */
 function resetForm(text,action,nombre = "",tareas ="",id="",tiempo=""){
   text = text.split("[ip]").join(ip);
@@ -154,7 +141,9 @@ function clearHeader(res){
   res.header.tarea = undefined;
 }
 
-
+/**
+ * función para el inicio de la aplciación
+ */
 app.get('/',function(req,res){
   console.log("# Entra en la peticion GET");
   connection.query("select * from tareas",function(error,result){
@@ -165,7 +154,8 @@ app.get('/',function(req,res){
         console.log("## Consulta realizada");
         datos = result;
         txt = txt.replace('[sustituir]', addTask());
-        txt = txt.replace('[sustituir_tiempo]', addGrant());
+        txt = txt.replace('[tiempo_sustituir]', addGrant());
+        txt = txt.replace('[tiempo_tabla]', numColspan+1);
         
         clearHeader(res);
         res.send(resetForm(txt,ip));
@@ -175,15 +165,9 @@ app.get('/',function(req,res){
 });
 
 /**
- * app.post('/datos',function(req,res)
- * Petición por el método POST , la url de '/datos' donde se necesita el body-parse
- * para que tramita los datos.
+ * función que se encarga de la petición POST , cuando se quiere
+ * insetar un dato 
  */
-// app.post('/datos',function(req,res){
-//   console.log(req.body);
-//   res.send("Nombre : "+req.body.nombre +" <br> Tarea : "+req.body.tarea|| '');
-// });
-
 app.post('/',function(req,res){
   console.log("# Entra en la petición POST - Se inserta un dato");
     if(req.body.nombre != undefined){
@@ -287,11 +271,13 @@ app.get('/pruebas',function(req , res){
   });
 });
 
+var numColspan = 0;
 function addGrant(){
+  numColspan = 0;
+  var html = "";
   var usersTimes = [];
-  var numColspan = 0;
   var nameuser = "";
- 
+  var repeats = [];
   for (const dato of datos) {
     if(numColspan <= dato.tiempo){
       numColspan = dato.tiempo;
@@ -299,10 +285,49 @@ function addGrant(){
     var occurrences = datos.filter(function(val) {
       return val.nombre === dato.nombre;
     });
-    usersTimes.push(occurrences);
+    if(occurrences.length != 1){
+      repeats.push(occurrences);
+    }else{
+      usersTimes.push({
+        nombre : dato.nombre,
+        color: '#'+(Math.random()*0xFFFFFF<<0).toString(16),
+        tiempo : dato.tiempo
+      });
+    }
   }
-  for (const occurrence of occurrences) {
-      console.log(typeof occurrence);
+  var x = 0;
+  for (const repeat of repeats) {
+    x++;
+    if(x % 2 == 0){
+      let time = 0 , nombre = "";
+      for (const r of repeat) {
+        console.log(r);
+        time += r.tiempo;
+        nombre = r.nombre;
+      }  
+        usersTimes.push({
+          nombre : nombre,
+          tiempo : time,
+          color: '#'+(Math.random()*0xFFFFFF<<0).toString(16)
+        });
+    }
+    
   }
-  console.log(usersTimes);
+
+  
+  for (const userTime of usersTimes) {
+    html += "<tr><td stlye='background-color:white;'>"+userTime.nombre+"</td>"
+    for (let index = 0; index < numColspan; index++) {
+      if(index < userTime.tiempo){
+
+        html += "<td style='width:1px;heigth:1px;background-color:"+userTime.color+";'>"+(index+1)+"</td>"
+      }else{
+        
+        html += "<td ></td>"
+      }
+    }
+
+    html += "</tr>";
+  }
+  return html;
 }
