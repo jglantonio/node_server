@@ -221,15 +221,22 @@ app.post('/borrar/tarea', function (req, res) {
 app.post('/editar/tarea', function (req, res) {
   console.log("# Petición POST redirect de Editar");
   var task = 0;
-  fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
-    for(dato of datos){
-      if(dato.id == req.body.id){
-        task = dato;
-      }
+  connection.query("select * from tareas",function(error,result){
+    if(error){
+     throw error;
+    }else{
+      fs.readFile('./www/tareas/index.html','utf8',function(err,txt){
+        datos = result;
+        for(dato of datos){
+          if(dato.id == req.body.id){
+            task = dato;
+          }
+        }
+        txt = txt.replace('[sustituir]', addTask());
+        clearHeader(res);
+        res.send(resetForm(txt,ip+"/actualizar/tarea",task.nombre,task.tarea,task.id));
+      });
     }
-    console.log(task,req.body);
-  
-    res.send(resetForm(txt,ip+"/actualizar/tarea",task.nombre,task.tarea,task.id));
   });
 });
 /**
